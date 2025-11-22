@@ -1,0 +1,284 @@
+#include "stm32l476xx.h"
+#include "LCD.h"
+#include "core_cm4.h"
+#include <stdio.h>
+
+
+//sets neccessary variables
+int countDiv, minutes, seconds, tenths;
+int count = 0;
+int pause = 0;	
+
+void EXTI_Init(void){
+	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOCEN;
+	RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+	
+		//Set PC0-2 to input mode
+	GPIOC->MODER &= 0xFFFFFFC0;
+	
+	
+	//Set PUPDR for 0-2 to pull-down
+	GPIOC->PUPDR &= 0xFFFFFFC0;
+	GPIOC->PUPDR |= 0X0000002A;
+	
+	
+	NVIC_EnableIRQ(EXTI0_IRQn); //enables interrupt red 
+	NVIC_EnableIRQ(EXTI1_IRQn); //enables interrupt yellow
+	NVIC_EnableIRQ(EXTI2_IRQn); //enables interrupt green
+	
+		
+	SYSCFG->EXTICR[0] &= ~SYSCFG_EXTICR1_EXTI0; //connect external line to GPI red
+	SYSCFG->EXTICR[0] |= SYSCFG_EXTICR1_EXTI0_PC;
+	
+	
+	SYSCFG->EXTICR[0] &= ~SYSCFG_EXTICR1_EXTI1; //connect external line to GPI yellow
+	SYSCFG->EXTICR[0] |= SYSCFG_EXTICR1_EXTI1_PC;
+	
+	
+	SYSCFG->EXTICR[0] &= ~SYSCFG_EXTICR1_EXTI2; //connect external line to GPI green
+	SYSCFG->EXTICR[0] |= SYSCFG_EXTICR1_EXTI2_PC;
+	//SYSCFG->EXTICR[0] &= ~(0x000F);
+	
+	EXTI->FTSR1 &= ~EXTI_FTSR1_FT0; //sets falling edge red
+	EXTI->FTSR1 &= ~EXTI_FTSR1_FT1; //sets falling edge yellow
+	EXTI->FTSR1 &= ~EXTI_FTSR1_FT2; //sets falling edge green
+	
+	EXTI->RTSR1 |= EXTI_RTSR1_RT0; //disables rising edge red
+	EXTI->RTSR1 |= EXTI_RTSR1_RT1;	//disables rising edge yellow
+	EXTI->RTSR1 |= EXTI_RTSR1_RT2;	//disables risting edge green
+	
+	
+	EXTI-> IMR1 |= EXTI_IMR1_IM0; //masks red
+	EXTI-> IMR1 |= EXTI_IMR1_IM1; //masks yellow
+	EXTI-> IMR1 |= EXTI_IMR1_IM2; //masks green
+	
+	
+	NVIC_SetPriority(EXTI0_IRQn, 1);
+	NVIC_SetPriority(EXTI1_IRQn, 1);
+	NVIC_SetPriority(EXTI2_IRQn, 1);
+	
+	
+	
+	
+}
+
+void EXTI0_IRQHandler(void) {
+	if ((EXTI->PR1 & EXTI_PR1_PIF0) == EXTI_PR1_PIF0) {
+		count = 0;
+		pause = 1;
+		EXTI->PR1 = EXTI_PR1_PIF0;
+	}
+}
+
+void EXTI1_IRQHandler(void) {
+	if ((EXTI->PR1 & EXTI_PR1_PIF1) == EXTI_PR1_PIF1) {
+		pause = 1;
+		EXTI->PR1 = EXTI_PR1_PIF1;
+	}
+}
+
+void EXTI2_IRQHandler(void) {
+	if ((EXTI->PR1 & EXTI_PR1_PIF2) == EXTI_PR1_PIF2) {
+		pause = 0;
+		EXTI->PR1 = EXTI_PR1_PIF2;
+	}
+}
+
+
+
+
+
+void SysTick_Initialize(uint32_t ticks){
+	
+	SysTick->CTRL = 0;
+	
+	SysTick->LOAD = ticks - 1;
+	
+	NVIC_SetPriority(SysTick_IRQn, (1 <<__NVIC_PRIO_BITS) -1);
+	
+	SysTick->VAL = 0;
+	
+	SysTick->CTRL |= SysTick_CTRL_CLKSOURCE_Msk;
+	
+	SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;
+	
+	SysTick->CTRL |= SysTick_CTRL_ENABLE_Msk;
+	
+}
+
+
+
+
+void SysTick_Handler() {
+	
+	//if we are counting time
+	if(pause == 0) {
+		count++;
+	}
+		//get the correct number for tenths of second, second , and minute
+		int tenths = count % 10;
+		int seconds = (count/10) %60;
+		int minutes = (count/ (10*60)) %60;
+	
+		//string for displaying
+		unsigned char timeString[8];
+	
+		//creates a string to display on the LCD
+		sprintf((char*)timeString, "%02d:%02d:%d", minutes, seconds, tenths); 
+		
+		//displays the string to the LCD
+    LCD_DisplayString(0, timeString);
+}
+
+
+int main(void){
+	
+	//initializes and clears screen
+	LCD_Init();
+	LCD_Clear();
+	//sets up external interuupt 
+	EXTI_Init();
+	
+	//initialize the clock
+	SysTick_Initialize(400000);
+	
+	//dead loop
+	while(1);
+}
+
+\end{verbatim}
+
+\newpage
+LCD
+\begin{verbatim}
+   #include "LCD.h"
+#include "stm32l476xx.h"
+
+
+unsigned char r0 = 0;
+unsigned char r1 = 0;
+unsigned char r2 = 0;
+unsigned char r3 = 0;
+
+void delay_ms(unsigned int ms) {
+	for(unsigned int i = 0; i < ms; i++) {
+		for (unsigned int j = 0; j < 40; j++);
+	}
+}
+void pulse(){
+  GPIOB->ODR |= 0x0080;
+  delay_ms(10);
+  GPIOB->ODR &= 0xFF7F;
+  delay_ms(10);
+  
+}
+
+void LCD_WriteCom(unsigned char com) {
+	unsigned char low_com = com&0x0F;
+	unsigned char high_com = (com>>4)&0x0F;
+	
+	//set E and RS to 0
+	GPIOB->ODR &= 0xFFFFFF3F;
+	
+	//send higher 4 bits to LCD
+	r0 = GPIOB->ODR & 0xFFFFFFF0;
+	r0 = r0 | high_com;
+	GPIOB->ODR = r0;
+	//pulse E to send higher 4 bits
+	pulse();
+	
+	//wait 10ms
+	delay_ms(10);
+	//send lower 4 bits to LCD
+	r0 = GPIOB->ODR & 0xFFFFFFF0;
+	r0 = r0 | low_com;
+	GPIOB->ODR = r0;
+	//pulse E to send lower 4 bits
+	pulse();
+	
+	
+	
+}
+
+void LCD_WriteData(unsigned char dat) {
+	unsigned char low_dat = dat&0x0F;
+	unsigned char high_dat = (dat>>4)&0x0F;
+	
+	//set E to 0 and RS to 1 
+	r0 = GPIOB->ODR & 0xFFFFFF3F;
+	r0 = r0 | 0x00000040;
+	GPIOB->ODR = r0;
+	//send higher 4 bits to LCD
+	GPIOB->ODR &= 0xFFFFFFF0;
+	GPIOB->ODR |= high_dat;
+	//pulse E to send bits
+	pulse();
+	delay_ms(10);
+	//send lower 4 bits to LCD
+	GPIOB->ODR &= 0xFFFFFFF0;
+	GPIOB->ODR |= low_dat;
+  //pulse E to send bits
+  pulse();
+}
+
+
+void LCD_Init(void){
+	//enable HSI clock
+	RCC->CR |= RCC_CR_HSION;
+
+  while((RCC->CR & RCC_CR_HSIRDY) == 0);
+	//enable GPIOB&C clocks
+	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
+
+	
+	
+	
+  GPIOB->MODER &= 0xFFFF0F00;
+  GPIOB->MODER |= 0x00005055;
+	
+	GPIOB->MODER &= 0x0000FFFF;
+	GPIOB->MODER |= 0x00550000;
+	
+	
+	GPIOB->OTYPER |= 0x00000F00;
+	
+  delay_ms(50);
+
+  for(int i =0; i <3; ++i){
+    GPIOB->ODR &= 0xFFFFFF00;
+    GPIOB->ODR |= 0x00000003;
+    pulse();
+  }
+	GPIOB->ODR &= 0xFFFFFF00;
+	GPIOB->ODR |= 0x00000002;
+  pulse();
+	delay_ms(4);
+	//Set default settings
+	LCD_WriteCom(0x28); //4 bit, 2 line display, 5x8
+  	delay_ms(5);
+	LCD_WriteCom(0x0C); //display
+  	delay_ms(5);
+	LCD_WriteCom(0x06); //cursor
+	delay_ms(5);
+	LCD_Clear();
+	delay_ms(5);
+	LCD_WriteCom(0x80); //cgram to 0
+	delay_ms(5);
+}
+
+
+void LCD_Clear(void){
+  LCD_WriteCom(0x01);
+}
+
+void LCD_DisplayString(unsigned int line, unsigned char *ptr) {
+	if(line == 0){
+		LCD_WriteCom(0x80);
+	}	
+	else{
+		LCD_WriteCom(0xC0);
+	}	
+	for(int i =0; ptr[i] != '\0' && i <16; i++){
+		LCD_WriteData(ptr[i]);
+	}
+}
