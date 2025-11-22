@@ -1,0 +1,103 @@
+#include "stm32l476xx.h"
+
+
+void USART_Init();
+void USART_Write(uint8_t *buffer, uint32_t nBytes);
+void USART_Read(uint8_t *buffer, uint32_t nBytes);
+
+int main(void) {
+	RCC->CR |= RCC_CR_HSION;
+	
+	while((RCC->CR & RCC_CR_HSIRDY) == 0); 
+	
+	RCC->CFGR |= 0x1;
+	
+	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN;
+	
+	GPIOA->MODER &= ~(0xF << (2*2));
+	GPIOA->MODER |= 0xA << (2*2);
+	
+	GPIOA->AFR[0] |= 0x77 << (4*2);
+	
+	GPIOA->OSPEEDR |= 0xF << (2*2);
+	
+	GPIOA->PUPDR &= ~(0xF << (2*2));
+	GPIOA->PUPDR |= 0x5 << (2*2);
+	
+	GPIOA->OTYPER &= ~(0xC);
+	
+	
+	RCC->APB1ENR1 |= RCC_APB1ENR1_USART2EN; 
+	
+	
+	RCC->CCIPR &= ~(RCC_CCIPR_USART2SEL);
+	RCC->CCIPR |= (RCC_CCIPR_USART2SEL_0);
+	
+	USART_Init();
+	
+	
+	uint8_t buffer2[1] = {0};
+		
+	//USART_Write("Temp not found\n\r", 16);
+	while(1){
+		
+		USART_Read(buffer2, 1);
+		
+		//USART_Write(buffer2, 8);
+		
+		if(buffer2[0] == 't' || buffer2[0] == 'T'){
+			USART_Write("Temp not found\n\r", 16);
+		}
+	
+	}
+
+}
+
+void USART_Init() {
+	
+	//Disable USART
+	USART2->CR1 &= ~USART_CR1_UE;
+	
+	USART2->CR1 &= ~USART_CR1_M;
+	
+	USART2->CR2 &= ~USART_CR2_STOP;
+	
+	USART2->CR1 &= ~USART_CR1_PCE;
+	
+	USART2->CR1 &= ~USART_CR1_OVER8;
+	
+	USART2->BRR = 0x683;
+	
+	USART2->CR1 |= (USART_CR1_TE | USART_CR1_RE);
+	
+	USART2->CR1 |= USART_CR1_UE;
+	
+	while ((USART2->ISR & USART_ISR_TEACK) == 0);
+	
+	while ((USART2->ISR & USART_ISR_REACK) == 0);
+	
+	
+}
+
+void USART_Read(uint8_t *buffer, uint32_t nBytes) {
+	unsigned int i;
+	
+	for (i = 0; i < nBytes; i++) {
+		while (!(USART2->ISR & USART_ISR_RXNE));
+		buffer[i] = USART2->RDR;
+	}
+}
+
+void USART_Write(uint8_t *buffer, uint32_t nBytes) {
+	
+	unsigned int i;
+	
+	for (i = 0; i < nBytes; i++) {
+		while (!(USART2->ISR & USART_ISR_TXE));
+		USART2->TDR = buffer[i] & 0xFF;
+	}
+	
+	while (!(USART2->ISR & USART_ISR_TC));
+	
+	USART2->ICR |= USART_ICR_TCCF;
+}
