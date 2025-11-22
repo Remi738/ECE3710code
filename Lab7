@@ -1,0 +1,314 @@
+#include "stm32l476xx.h"
+
+#define row1 (1 << 8)
+#define row2 (1 << 9)
+#define row3 (1 << 10)
+#define row4 (1 << 11)
+#define col1 (1 << 12)
+#define col2 (1 << 13)
+#define col3 (1 << 14)
+#define col4 (1 << 15)
+
+#define a (1 << 1)
+#define b (1 << 2)
+#define ap (1 << 3)
+#define bp (1 << 4)
+
+void secCW();
+void secCCW();
+void delay_ms(unsigned int ms);
+void clock(int time);
+void keypad();
+void buzzpulse();
+void buzzer();
+
+
+int main(void){
+	RCC->CR |= RCC_CR_HSION;
+	
+	while((RCC->CR & RCC_CR_HSIRDY) == 0);
+	
+	
+	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
+	
+	//sets ports for motor and buzzer
+	GPIOB->MODER &= ~0x000003FF;
+	GPIOB->MODER |= 0x00000155;
+	
+	
+	//sets ports for keypad
+	GPIOB->MODER &= 0x0000FFFF;
+	GPIOB->MODER |= 0x00550000;
+	
+	keypad();
+	
+	
+	
+	
+	while(1);
+}
+
+void secCCW(){
+	for(int i =0; i < (35); i++){
+		GPIOB->ODR &= 0xFFFFFFE1;
+		GPIOB->ODR |= 1 << (4 - (i%4));
+		delay_ms(200);
+	}
+}
+
+void secCW(){
+	for(int i =0; i < (35); i++){
+		GPIOB->ODR &= 0xFFFFFFE1;
+		GPIOB->ODR |= 1 << ((i%4)+1);
+		delay_ms(20);
+		
+	}
+}
+void buzzer(){
+	for(int i =0; i < 150; i++){
+		buzzpulse();
+		delay_ms(40);
+	}
+}
+void buzzpulse(){
+	GPIOB->ODR |= 0x00000001;
+	delay_ms(1);
+	GPIOB->ODR &= ~0x00000001;
+	delay_ms(1);
+}
+void delay_ms(unsigned int ms) {
+	for(unsigned int i = 0; i < ms; i++) {
+		for (unsigned int j = 0; j < 40; j++);
+	}
+}
+
+unsigned int sec[2] = {0,0};
+
+void keypad(){
+	//sets necessary variables
+	int LeaveLoop = 0;
+	
+
+	
+	//Letters/numbers array
+	unsigned int letters[4][3] = {{1,2,3},
+																	{4,5,6},
+																	{7,8,9},
+																	{'*',0,'#'}};
+	
+
+	//begin reading loop
+	while(LeaveLoop == 0) {
+		
+		//column 1 pushed
+		if ((GPIOB->IDR & col1) == 0) {
+		
+
+		
+			
+			for (int i=0; i<4; i++) {
+				if(i == 0){
+					GPIOB->ODR &= ~row1;
+					GPIOB->ODR |= row2;
+					GPIOB->ODR |= row3;
+					GPIOB->ODR |= row4;
+				}
+				if(i == 1){
+					GPIOB->ODR |= row1;
+					GPIOB->ODR &= ~row2;
+					GPIOB->ODR |= row3;
+					GPIOB->ODR |= row4;
+				}
+				if(i == 2){
+					GPIOB->ODR |= row1;
+					GPIOB->ODR |= row2;
+					GPIOB->ODR &= ~row3;
+					GPIOB->ODR |= row4;
+				}
+				if(i == 3){
+					GPIOB->ODR |= row1;
+					GPIOB->ODR |= row2;
+					GPIOB->ODR |= row3;
+					GPIOB->ODR &= ~row4;
+				}
+				
+				if ((GPIOB->IDR & col1) == 0){
+					if(i != 3){
+						sec[0] = sec[1];
+						sec[1] = letters[i][0];
+						
+					} 
+				}
+				
+				while((GPIOB->IDR & col1) == 0);
+		
+				delay_ms(50);
+				GPIOB->ODR &= ~row1;
+				GPIOB->ODR &= ~row2;
+				GPIOB->ODR &= ~row3;
+				GPIOB->ODR &= ~row4;
+
+			}
+		}
+		
+		//column 2 pushed
+				if ((GPIOB->IDR & col2) == 0) {
+			for (int i=0; i<4; i++) {
+				if(i == 0){
+					GPIOB->ODR &= ~row1;
+					GPIOB->ODR |= row2;
+					GPIOB->ODR |= row3;
+					GPIOB->ODR |= row4;
+				}
+				if(i == 1){
+					GPIOB->ODR |= row1;
+					GPIOB->ODR &= ~row2;
+					GPIOB->ODR |= row3;
+					GPIOB->ODR |= row4;
+				}
+				if(i == 2){
+					GPIOB->ODR |= row1;
+					GPIOB->ODR |= row2;
+					GPIOB->ODR &= ~row3;
+					GPIOB->ODR |= row4;
+				}
+				if(i == 3){
+					GPIOB->ODR |= row1;
+					GPIOB->ODR |= row2;
+					GPIOB->ODR |= row3;
+					GPIOB->ODR &= ~row4;
+				}
+				
+				if ((GPIOB->IDR & col2) == 0){			
+					sec[0] = sec[1];
+					sec[1] = letters[i][1];
+				}
+				while((GPIOB->IDR & col2) == 0);
+		
+				delay_ms(50);
+				GPIOB->ODR &= ~row1;
+				GPIOB->ODR &= ~row2;
+				GPIOB->ODR &= ~row3;
+				GPIOB->ODR &= ~row4;
+
+			}
+		}
+		
+		//column 3 pushed
+				if ((GPIOB->IDR & col3) == 0) {
+			for (int i=0; i<4; i++) {
+				if(i == 0){
+					GPIOB->ODR &= ~row1;
+					GPIOB->ODR |= row2;
+					GPIOB->ODR |= row3;
+					GPIOB->ODR |= row4;
+				}
+				if(i == 1){
+					GPIOB->ODR |= row1;
+					GPIOB->ODR &= ~row2;
+					GPIOB->ODR |= row3;
+					GPIOB->ODR |= row4;
+				}
+				if(i == 2){
+					GPIOB->ODR |= row1;
+					GPIOB->ODR |= row2;
+					GPIOB->ODR &= ~row3;
+					GPIOB->ODR |= row4;
+				}
+				if(i == 3){
+					GPIOB->ODR |= row1;
+					GPIOB->ODR |= row2;
+					GPIOB->ODR |= row3;
+					GPIOB->ODR &= ~row4;
+				}
+				
+				if ((GPIOB->IDR & col3) == 0){
+					
+					if(i != 3){
+						sec[0] = sec[1];
+						sec[1] = letters[i][2];
+						
+					}
+					if(i == 3){
+						int time = (sec[0] * 10) + sec[1];
+						clock(time);
+					}
+				}
+				while((GPIOB->IDR & col3) == 0);
+		
+				delay_ms(50);
+				GPIOB->ODR &= ~row1;
+				GPIOB->ODR &= ~row2;
+				GPIOB->ODR &= ~row3;
+				GPIOB->ODR &= ~row4;
+
+			}
+		}
+		//column 4 pushed
+				if ((GPIOB->IDR & col4) == 0) {
+			for (int i=0; i<4; i++) {
+				if(i == 0){
+					GPIOB->ODR &= ~row1;
+					GPIOB->ODR |= row2;
+					GPIOB->ODR |= row3;
+					GPIOB->ODR |= row4;
+				}
+				if(i == 1){
+					GPIOB->ODR |= row1;
+					GPIOB->ODR &= ~row2;
+					GPIOB->ODR |= row3;
+					GPIOB->ODR |= row4;
+				}
+				if(i == 2){
+					GPIOB->ODR |= row1;
+					GPIOB->ODR |= row2;
+					GPIOB->ODR &= ~row3;
+					GPIOB->ODR |= row4;
+				}
+				if(i == 3){
+					GPIOB->ODR |= row1;
+					GPIOB->ODR |= row2;
+					GPIOB->ODR |= row3;
+					GPIOB->ODR &= ~row4;
+				}
+				
+				while((GPIOB->IDR & col4) == 0);
+		
+				delay_ms(50);
+				GPIOB->ODR &= ~row1;
+				GPIOB->ODR &= ~row2;
+				GPIOB->ODR &= ~row3;
+				GPIOB->ODR &= ~row4;
+			}
+		}
+		//switch to bottom line when top line is full
+		
+	}
+}
+
+int first = 0;
+void clock(int time){
+	
+	if(time > 59 || time < 1){
+		
+		sec[0] = 0;
+		sec[1] = 0;
+		return;
+	}
+	if (first == 0){
+		for (int i =0; i < time; i++){
+			secCW();
+		}
+		first = 1;
+	}else{
+		for (int j =0; j < time; j++){
+			secCCW();
+		}
+		
+		buzzer();
+		//buzzer function
+		first = 0;
+		sec[0] = 0;
+		sec[1] = 0;
+	}
+}
