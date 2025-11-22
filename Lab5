@@ -1,0 +1,301 @@
+#define row1 (1 << 8)
+#define row2 (1 << 9)
+#define row3 (1 << 10)
+#define row4 (1 << 11)
+#define col1 (1 << 12)
+#define col2 (1 << 13)
+#define col3 (1 << 14)
+#define col4 (1 << 15)
+
+int main(void){
+	
+	//initializes and clears screen
+	LCD_Init();
+	LCD_Clear();
+	
+	//sets necessary variables
+	int LeaveLoop = 0;
+	int countL = 0;
+	
+	
+	//Letters/numbers array
+	unsigned char letters[4][4] = { {'1','2','3','A'},
+									{'4','5','6','B'},
+									{'7','8','9','C'},
+									{'*','0','#','D'}};
+	
+	//begin reading loop
+	while(LeaveLoop == 0) {
+		
+		//column 1 pushed
+		if ((GPIOB->IDR & col1) == 0) {
+
+            //loop through each row
+			for (int i=0; i<4; i++) {
+                //first row 0111
+				if(i == 0){
+					GPIOB->ODR &= ~row1;
+					GPIOB->ODR |= row2;
+					GPIOB->ODR |= row3;
+					GPIOB->ODR |= row4;
+				}
+                //second row 1011
+				if(i == 1){
+					GPIOB->ODR |= row1;
+					GPIOB->ODR &= ~row2;
+					GPIOB->ODR |= row3;
+					GPIOB->ODR |= row4;
+				}
+                //third row 1101
+				if(i == 2){
+					GPIOB->ODR |= row1;
+					GPIOB->ODR |= row2;
+					GPIOB->ODR &= ~row3;
+					GPIOB->ODR |= row4;
+				}
+                //fourth row 1110
+				if(i == 3){
+					GPIOB->ODR |= row1;
+					GPIOB->ODR |= row2;
+					GPIOB->ODR |= row3;
+					GPIOB->ODR &= ~row4;
+				}
+				
+				if ((GPIOB->IDR & col1) == 0){
+					LCD_WriteData(letters[i][0]); //writes input to screen
+					
+					countL += 1;
+				}
+                //while the button is still pressed
+			    while((GPIOB->IDR & col1) == 0);
+
+                //wait 50ms
+				delay_ms(50);
+                //reset all rows to 0;
+					GPIOB->ODR &= ~row1;
+					GPIOB->ODR &= ~row2;
+					GPIOB->ODR &= ~row3;
+					GPIOB->ODR &= ~row4;
+
+			}
+		}
+		
+		//column 2 pushed
+		if ((GPIOB->IDR & col2) == 0) {
+
+            //loop through each row
+		      for (int i=0; i<4; i++) {
+                //first row 0111
+				if(i == 0){
+					GPIOB->ODR &= ~row1;
+					GPIOB->ODR |= row2;
+					GPIOB->ODR |= row3;
+					GPIOB->ODR |= row4;
+				}
+                //second row 1011
+				if(i == 1){
+					GPIOB->ODR |= row1;
+					GPIOB->ODR &= ~row2;
+					GPIOB->ODR |= row3;
+					GPIOB->ODR |= row4;
+				}
+                //third row 1101
+				if(i == 2){
+					GPIOB->ODR |= row1;
+					GPIOB->ODR |= row2;
+					GPIOB->ODR &= ~row3;
+					GPIOB->ODR |= row4;
+				}
+                //fourth row 1110
+				if(i == 3){
+					GPIOB->ODR |= row1;
+					GPIOB->ODR |= row2;
+					GPIOB->ODR |= row3;
+					GPIOB->ODR &= ~row4;
+				}
+				if ((GPIOB->IDR & col2) == 0){
+					LCD_WriteData(letters[i][1]); //writes input to screen
+					
+					countL += 1;
+				}
+               //while the button is still pressed
+				while((GPIOB->IDR & col2) == 0);
+                
+		          //wait 50ms
+				delay_ms(50);
+                //reset all rows to 0;
+					GPIOB->ODR &= ~row1;
+					GPIOB->ODR &= ~row2;
+					GPIOB->ODR &= ~row3;
+					GPIOB->ODR &= ~row4;
+
+			}
+		}
+		
+		//column 3 pushed
+		if ((GPIOB->IDR & col3) == 0) {
+
+            //loop through each row
+			for (int i=0; i<4; i++) {
+                //first row 0111
+				if(i == 0){
+					GPIOB->ODR &= ~row1;
+					GPIOB->ODR |= row2;
+					GPIOB->ODR |= row3;
+					GPIOB->ODR |= row4;
+				}
+                //second row 1011
+				if(i == 1){
+					GPIOB->ODR |= row1;
+					GPIOB->ODR &= ~row2;
+					GPIOB->ODR |= row3;
+					GPIOB->ODR |= row4;
+				}
+                //third row 1101
+				if(i == 2){
+					GPIOB->ODR |= row1;
+					GPIOB->ODR |= row2;
+					GPIOB->ODR &= ~row3;
+					GPIOB->ODR |= row4;
+				}
+                //fourth row 1110
+				if(i == 3){
+					GPIOB->ODR |= row1;
+					GPIOB->ODR |= row2;
+					GPIOB->ODR |= row3;
+					GPIOB->ODR &= ~row4;
+				}
+                
+				if ((GPIOB->IDR & col3) == 0){
+					LCD_WriteData(letters[i][2]); //writes input to screen
+					
+					countL += 1;
+				}
+               //while the button is still pressed
+				while((GPIOB->IDR & col3) == 0);
+                
+		          //wait 50ms
+				delay_ms(50);
+                //reset all rows to 0;
+					GPIOB->ODR &= ~row1;
+					GPIOB->ODR &= ~row2;
+					GPIOB->ODR &= ~row3;
+					GPIOB->ODR &= ~row4;
+
+			}
+		}
+		//column 4 pushed
+		if ((GPIOB->IDR & col4) == 0) {
+
+            //loop through each row
+			for (int i=0; i<4; i++) {
+                //first row 0111
+				if(i == 0){
+					GPIOB->ODR &= ~row1;
+					GPIOB->ODR |= row2;
+					GPIOB->ODR |= row3;
+					GPIOB->ODR |= row4;
+				}
+                //second row 1011
+				if(i == 1){
+					GPIOB->ODR |= row1;
+					GPIOB->ODR &= ~row2;
+					GPIOB->ODR |= row3;
+					GPIOB->ODR |= row4;
+				}
+                //third row 1101
+				if(i == 2){
+					GPIOB->ODR |= row1;
+					GPIOB->ODR |= row2;
+					GPIOB->ODR &= ~row3;
+					GPIOB->ODR |= row4;
+				}
+                //fourth row 1110
+				if(i == 3){
+					GPIOB->ODR |= row1;
+					GPIOB->ODR |= row2;
+					GPIOB->ODR |= row3;
+					GPIOB->ODR &= ~row4;
+				}
+				if ((GPIOB->IDR & col4) == 0){
+					LCD_WriteData(letters[i][3]); //writes input to screen
+					
+					countL += 1;
+				}
+                //while the button is still pressed
+				while((GPIOB->IDR & col4) == 0);
+                
+		          //wait 50ms
+				delay_ms(50);
+                //reset all rows to 0;
+					GPIOB->ODR &= ~row1;
+					GPIOB->ODR &= ~row2;
+					GPIOB->ODR &= ~row3;
+					GPIOB->ODR &= ~row4;
+			}
+		}
+		//switch to bottom line when top line is full
+		if (countL == 16){
+			LCD_WriteCom(0xC0);
+		}
+		//Exit loop when both lines are full
+		if (countL == 32){
+			LeaveLoop = 1;
+		}
+	}
+
+	
+	while(1);
+}
+
+
+
+
+
+
+\end{verbatim}
+
+\item \textbf{LCD Init function} \begin{verbatim}
+   
+
+void LCD_Init(void){
+	//enable HSI clock
+	RCC->CR |= RCC_CR_HSION;
+
+  while((RCC->CR & RCC_CR_HSIRDY) == 0);
+	//enable GPIOB clock
+	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
+	
+  GPIOB->MODER &= 0xFFFF0F00;
+  GPIOB->MODER |= 0x00005055;
+	
+	GPIOB->MODER &= 0x0000FFFF;
+	GPIOB->MODER |= 0x00550000;
+	
+	
+	GPIOB->OTYPER |= 0x00000F00;
+	
+	
+  delay_ms(50);
+
+  for(int i =0; i <3; ++i){
+    GPIOB->ODR &= 0xFFFFFF00;
+    GPIOB->ODR |= 0x00000003;
+    pulse();
+  }
+	GPIOB->ODR &= 0xFFFFFF00;
+	GPIOB->ODR |= 0x00000002;
+  pulse();
+	delay_ms(4);
+	//Set default settings
+	LCD_WriteCom(0x28); //4 bit, 2 line display, 5x8
+  	delay_ms(5);
+	LCD_WriteCom(0x0C); //display
+  	delay_ms(5);
+	LCD_WriteCom(0x06); //cursor
+	delay_ms(5);
+	LCD_Clear();
+	delay_ms(5);
+	LCD_WriteCom(0x80); //cgram to 0
+	delay_ms(5);
+}
